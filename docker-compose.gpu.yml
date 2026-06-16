@@ -1,0 +1,25 @@
+# GPU reservation pattern for vLLM, TEI, and Docling (Sprint 03+).
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml --profile gpu-test run --rm gpu-smoke-test nvidia-smi
+
+x-gpu-deploy: &gpu-deploy
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]
+
+services:
+  gpu-smoke-test:
+    <<: *gpu-deploy
+    image: nvidia/cuda:12.0.0-base-ubuntu22.04
+    profiles: [gpu-test]
+    networks:
+      - rag-net
+
+networks:
+  rag-net:
+    name: rag-net
+    external: true

@@ -1,0 +1,49 @@
+name: agentic-rag
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: earp-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-earp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-in-local-env}
+      POSTGRES_DB: ${POSTGRES_DB:-earp}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - rag-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-earp} -d ${POSTGRES_DB:-earp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  valkey:
+    image: valkey/valkey:latest
+    container_name: earp-valkey
+    restart: unless-stopped
+    ports:
+      - "${VALKEY_PORT:-6379}:6379"
+    volumes:
+      - valkey_data:/data
+    networks:
+      - rag-net
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+networks:
+  rag-net:
+    name: rag-net
+    driver: bridge
+
+volumes:
+  pgdata:
+  valkey_data:
