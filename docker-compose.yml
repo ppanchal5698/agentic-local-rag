@@ -39,6 +39,38 @@ services:
       retries: 5
       start_period: 5s
 
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    image: fastapi-app:latest
+    container_name: earp-api-gateway
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${API_GATEWAY_PORT:-8000}:8000"
+    volumes:
+      - ./services/api-gateway/app:/app/app
+    networks:
+      - rag-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
 networks:
   rag-net:
     name: rag-net

@@ -52,10 +52,10 @@ Deploy the FastAPI entry point that binds orchestration graphs, ingestion pipeli
 
 ## Acceptance Criteria
 
-- [ ] `api-gateway` service is deployed as `fastapi-app:latest` on port `8000:8000` within `rag-net`.
-- [ ] JWT credentials are validated to establish user identity and permissions on protected endpoints.
-- [ ] FastAPI handles concurrent I/O operations asynchronously without blocking.
-- [ ] Application code and `.env` files are mounted as specified.
+- [x] `api-gateway` service is deployed as `fastapi-app:latest` on port `8000:8000` within `rag-net`.
+- [x] JWT credentials are validated to establish user identity and permissions on protected endpoints.
+- [x] FastAPI handles concurrent I/O operations asynchronously without blocking.
+- [x] Application code and `.env` files are mounted as specified.
 
 ---
 

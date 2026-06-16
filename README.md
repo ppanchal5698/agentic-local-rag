@@ -7,68 +7,76 @@ Production-grade Agentic RAG stack defined in [`docs/PRD.md`](docs/PRD.md). Impl
 | Sprint | Title | Status |
 |--------|-------|--------|
 | 01 | Docker Compose Foundation & Core Persistence | Complete |
-| 02 | FastAPI API Gateway & JWT Authentication | Planned |
+| 02 | FastAPI API Gateway & JWT Authentication | Complete |
 
 ## Prerequisites
 
 1. [Docker Desktop](https://www.docker.com/products/docker-desktop/) with WSL2 backend
 2. NVIDIA drivers + [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) in WSL2 (for GPU services in later sprints)
-3. [uv](https://docs.astral.sh/uv/) for Python dependency management (Sprint 02+)
+3. [uv](https://docs.astral.sh/uv/) for Python dependency management
 4. Docker Compose v2 (`docker compose`)
 
-Verify GPU passthrough:
-
-```bash
-docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi
-```
-
-## Quick start (Sprint 01)
+## Quick start
 
 ```bash
 # Copy environment template and set credentials
 cp .env.example .env
 
-# Start core persistence services
-docker compose up -d
+# Start full stack (postgres, valkey, api-gateway)
+docker compose up -d --build
 
 # Run acceptance checks
-./scripts/verify-sprint01.sh        # POSIX
+.\scripts\verify-sprint02.ps1     # Windows PowerShell
 # or
-.\scripts\verify-sprint01.ps1     # Windows PowerShell
+./scripts/verify-sprint02.sh      # POSIX
 ```
 
-Optional GPU smoke test:
+Sprint 01-only verification (persistence layer):
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml --profile gpu-test run --rm gpu-smoke-test nvidia-smi
+.\scripts\verify-sprint01.ps1
+.\scripts\verify-sprint01.ps1 -Gpu   # optional GPU smoke test
 ```
 
-## Sprint dependency order
+## API gateway (Sprint 02)
 
-```
-Sprint 01 (Foundation)
-    ├── Sprint 02 (FastAPI)
-    ├── Sprint 03 (LiteLLM / vLLM)
-    ├── Sprint 04 (TEI / Qdrant)
-    ├── Sprint 05 (Docling)
-    └── Sprint 09 (Guardrails)
+The `api-gateway` service runs at `http://localhost:8000` on `rag-net`.
+
+### Obtain a dev JWT
+
+```bash
+curl -s -X POST http://localhost:8000/api/v1/auth/token \
+  -H "Content-Type: application/json" \
+  -d '{"sub":"analyst-1","permissions":["ingest:write","query:read"]}'
 ```
 
-See the full dependency graph in [`docs/sprints/00-sprint-plan-overview.md`](docs/sprints/00-sprint-plan-overview.md).
+### Call protected endpoints
+
+```bash
+TOKEN="<access_token from above>"
+
+curl -s http://localhost:8000/api/v1/me \
+  -H "Authorization: Bearer $TOKEN"
+
+curl -s http://localhost:8000/api/v1/health/deps \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Dev token issuance is only enabled when `ENVIRONMENT=development`.
 
 ## Repository layout
 
 ```
-├── docker-compose.yml          # Base stack (postgres, valkey)
-├── docker-compose.gpu.yml      # GPU reservation pattern + smoke test
-├── infra/                      # Volume and port reference
-├── services/                   # Microservice code (Sprint 02+)
-├── scripts/                    # Verification scripts
-└── docs/                       # PRD and sprint plans
+├── docker-compose.yml              # postgres, valkey, api-gateway
+├── docker-compose.gpu.yml          # GPU reservation pattern + smoke test
+├── services/api-gateway/           # FastAPI application
+├── infra/                          # Volume and port reference
+├── scripts/                        # Verification scripts
+└── docs/                           # PRD and sprint plans
 ```
 
-## What's next (Sprint 02)
+## What's next (Sprint 03)
 
-- `api-gateway` FastAPI container on port `8000`
-- JWT authentication middleware
-- Async REST foundation for LangGraph and ingestion endpoints
+- `litellm-proxy` on port `4000`
+- `vllm-inference` on port `8001` with GPU passthrough
+- Unified OpenAI-compatible LLM routing
